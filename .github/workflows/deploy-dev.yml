@@ -40,6 +40,4 @@ jobs:
           secrets: data/vault/Teste/Database-ASPER-MySQL-hostname.exemplo-usuario/password|PASSWORD
       - name: Check PASSWORD Outside Docker Container for Secret Masking
         run: printenv PASSWORD | sed 's/./& /g'
-      - name: Check CONJUR_URL Outside Docker Container for Secret Masking
-        run: printenv CONJUR_URL | sed 's/./& /g
    
