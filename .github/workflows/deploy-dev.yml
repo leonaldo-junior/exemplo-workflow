@@ -13,15 +13,36 @@ jobs:
       - name: GitHub OIDC JWT Token/Conjur Access Token
         shell: bash
         run: |
-          OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-          "https://vstoken.actions.githubusercontent.com/.well-known/openid-configuration" \
-          | jq -r '.token_endpoint' | xargs -I {} curl -s -X POST \
+          echo "[INFO] Verificando openid-configuration..."
+          CONFIG=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "https://vstoken.actions.githubusercontent.com/.well-known/openid-configuration")
+
+          echo "[DEBUG] OpenID Config:"
+          echo "$CONFIG" | jq
+
+          TOKEN_ENDPOINT=$(echo "$CONFIG" | jq -r '.token_endpoint')
+          echo "[INFO] Endpoint para solicitação do token: $TOKEN_ENDPOINT"
+
+          if [ -z "$TOKEN_ENDPOINT" ]; then
+            echo "[ERROR] token_endpoint não foi encontrado."
+            exit 1
+          fi
+
+          OIDC_TOKEN=$(curl -s -X POST \
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"audience":"conjur"}' \
-            {} | jq -r '.value')
+            "$TOKEN_ENDPOINT" | jq -r '.value')
+
+          if [ -z "$OIDC_TOKEN" ]; then
+            echo "[ERROR] Token OIDC não foi retornado."
+            exit 1
+          fi
 
           echo "JWT: $OIDC_TOKEN" > jwt-github.txt
+
+          echo "[INFO] Decodificando JWT:"
+          echo "$OIDC_TOKEN" | cut -d '.' -f2 | base64 -d | jq
 
         # JWT_GITHUB_TOKEN=$(curl -H "Authorization:bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r .value)
         # echo "JWT: $JWT_GITHUB_TOKEN" > "jwt-github.txt"
