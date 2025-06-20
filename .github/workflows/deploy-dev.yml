@@ -17,7 +17,7 @@ jobs:
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"audience":"conjur"}' \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
+            "https://vstoken.actions.githubusercontent.com/.well-known/openid-configuration" \
             | jq -r '.value')
 
           echo "$OIDC_TOKEN" > jwt-github.txt
