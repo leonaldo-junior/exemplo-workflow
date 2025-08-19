@@ -1,43 +1,23 @@
-name: "application-dev"
-on:
-  workflow_dispatch:
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    # ...
-    permissions:
-      id-token: 'write'
-      contents: 'read'
-   
-    steps:
-      - name: GitHub OIDC JWT Token/Conjur Access Token
-        shell: bash
-        run: |
-          JWT_GITHUB_TOKEN=$(curl -H "Authorization:bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}?audience=conjur" | jq -r .value)
-          echo "JWT: $JWT_GITHUB_TOKEN" > "jwt-github.txt"
-          JWT_CONJUR_TOKEN=$(curl --request POST "${{ secrets.CONJUR_URL }}/authn-jwt/${{ secrets.CONJUR_AUTHN_ID }}/${{ secrets.CONJUR_ACCOUNT }}/authenticate" --header 'Content-Type: application/x-www-form-urlencoded' --header "Accept-Encoding: base64" --data-urlencode "jwt=$JWT_GITHUB_TOKEN")
-          echo "AT: $JWT_CONJUR_TOKEN" > "jwt-conjur.txt"
-      # ...
-      - uses: actions/upload-artifact@v4
-        name: Upload JWT File
-        with:
-          name: jwt-github
+			name: "application-dev"
+			on:
+			  workflow_dispatch:
+			jobs:
+			  test:
+			    runs-on: ubuntu-latest
+			    # ...
+			    permissions:
+			      id-token: 'write'
+			      contents: 'read'
+			   
+			    steps:
+			      - name: GitHub OIDC JWT Token/Conjur Access Token
+			        shell: bash
+			        run: |
+			          JWT_GITHUB_TOKEN=$(curl -H "Authorization:bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}?audience=conjur" | jq -r .value)
+			          echo "JWT: $JWT_GITHUB_TOKEN" > "jwt-github.txt"
+			      # ...
+			      - uses: actions/upload-artifact@v4
+			        name: Upload JWT File
+			        with:
+			          name: jwt-github
           path: "jwt-github.txt"
-      - uses: actions/upload-artifact@v4
-        name: Upload AccessToken File
-        with:
-          name: jwt-conjur
-          path: "jwt-conjur.txt"
-      # ...
-   
-      # ...
-      - name: Import Secrets using CyberArk Conjur Secret Fetcher
-        uses: cyberark/conjur-action@v2.0.6
-        with:
-          url: ${{ secrets.CONJUR_URL }}
-          account: conjur
-          authn_id: ${{ secrets.CONJUR_AUTHN_ID }}
-          secrets: data/vault/Teste/Database-ASPER-MySQL-hostname.exemplo-usuario/password|PASSWORD
-      - name: Check PASSWORD Outside Docker Container for Secret Masking
-        run: printenv PASSWORD | sed 's/./& /g'
-   
